@@ -50,8 +50,12 @@ class AnacronSourceTab(list):
     """This enables the anacron detection"""
     slices = "56 4 * * 4"
     def __init__(self, tabs=None):
-        self.append(crontab.CronTab(user=False, tab="%s root anacron_cmd %s" \
-            % (self.slices, os.path.join(TEST_DIR, 'data', 'anacron'))))
+        self.append(
+            crontab.CronTab(
+                user=False,
+                tab=f"{self.slices} root anacron_cmd {os.path.join(TEST_DIR, 'data', 'anacron')}",
+            )
+        )
 
 crontabs.KNOWN_LOCATIONS = [
   (AnacronSourceTab,),
@@ -62,7 +66,9 @@ crontabs.KNOWN_LOCATIONS = [
   (crontabs.AnaCronTab, os.path.join(TEST_DIR, 'data', 'anacron')),
 ]
 
-crontab.CRONCMD = "%s %s" % (sys.executable, os.path.join(TEST_DIR, 'data', 'crontest'))
+crontab.CRONCMD = (
+    f"{sys.executable} {os.path.join(TEST_DIR, 'data', 'crontest')}"
+)
 
 class CronTabsTestCase(unittest.TestCase):
     """Test use documentation in crontab."""

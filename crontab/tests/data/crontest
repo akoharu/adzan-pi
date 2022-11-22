@@ -15,10 +15,7 @@ def main():
         sys.stderr.write('|'.join(sorted(args)) + "\n")
         return
 
-    user = 'user'
-    if '-u' in args:
-        user = args[args.index('-u')+1]
-
+    user = args[args.index('-u')+1] if '-u' in args else 'user'
     if '-l' in args:
         if user == 'error':
             raise ValueError("Delibrate IO Error")

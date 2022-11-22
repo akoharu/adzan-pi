@@ -42,7 +42,9 @@ class DummyStdout(object):
 
 BASIC = '@hourly firstcommand\n\n'
 USER = '\n*/4 * * * * user_command # user_comment\n\n\n'
-crontab.CRONCMD = "%s %s" % (sys.executable, os.path.join(TEST_DIR, 'data', 'crontest'))
+crontab.CRONCMD = (
+    f"{sys.executable} {os.path.join(TEST_DIR, 'data', 'crontest')}"
+)
 
 def flush():
     pass
@@ -117,7 +119,7 @@ class UseTestCase(unittest.TestCase):
         self.assertTrue(item.is_enabled())
         with self.assertRaises(UnboundLocalError):
             item.delete()
-        item.command = str('nothing')
+        item.command = 'nothing'
         self.assertEqual(item.render(), '* * * * * nothing')
 
     def test_10_time_object(self):

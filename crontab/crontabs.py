@@ -31,12 +31,10 @@ class UserSpool(list):
     """Generates all user crontabs, yields both owned and abandoned tabs"""
     def __init__(self, loc, tabs=None):
         for username in self.listdir(loc):
-            tab = self.generate(loc, username)
-            if tab:
+            if tab := self.generate(loc, username):
                 self.append(tab)
         if not self:
-            tab = CronTab(user=True)
-            if tab:
+            if tab := CronTab(user=True):
                 self.append(tab)
 
     def listdir(self, loc):
@@ -78,8 +76,7 @@ class AnaCronTab(list):
     def __init__(self, loc, tabs=None):
         if tabs and os.path.isdir(loc):
             self.append(CronTab(user=False))
-            jobs = list(tabs.all.find_command(loc))
-            if jobs:
+            if jobs := list(tabs.all.find_command(loc)):
                 for item in os.listdir(loc):
                     self.add(loc, item, jobs[0])
                 jobs[0].delete()
@@ -89,7 +86,7 @@ class AnaCronTab(list):
         if item in ['0anacron'] or item[0] == '.' or not access(path, X_OK):
             return
         job = self[0].new(command=path, user=anajob.user)
-        job.set_comment('Anacron %s' % loc.split('.')[-1])
+        job.set_comment(f"Anacron {loc.split('.')[-1]}")
         job.setall(anajob)
         return job
 
