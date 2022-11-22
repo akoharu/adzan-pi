@@ -160,11 +160,11 @@ def open_pipe(cmd, *args, **flags):
     cmd_args = tuple(shlex.split(cmd))
     for (key, value) in flags.items():
         if len(key) == 1:
-            cmd_args += ("-%s" % key),
+            cmd_args += (f"-{key}", )
             if value is not None:
                 cmd_args += str(value),
         else:
-            cmd_args += ("--%s=%s" % (key, value)),
+            cmd_args += (f"--{key}={value}", )
     args = tuple(arg for arg in (cmd_args + tuple(args)) if arg)
     return sp.Popen(args, stdout=sp.PIPE, stderr=sp.PIPE)
 
@@ -172,9 +172,7 @@ def _unicode(text):
     """Convert to the best string format for this python version"""
     if type(text) is str and not PY3:
         return unicode(text, 'utf-8')
-    if type(text) is bytes and PY3:
-        return text.decode('utf-8')
-    return text
+    return text.decode('utf-8') if type(text) is bytes and PY3 else text
 
 
 class CronTab(object):
@@ -217,18 +215,15 @@ class CronTab(object):
     @property
     def user(self):
         """Return user's username of this crontab if applicable"""
-        if self._user is True:
-            return current_user()
-        return self._user
+        return current_user() if self._user is True else self._user
 
     @property
     def user_opt(self):
         """Returns the user option for the crontab commandline"""
         # Fedora and Mac require the current user to not specify
         # But Ubuntu/Debian doesn't care. Be careful here.
-        if self._user and self._user is not True:
-            if self._user != current_user():
-                return {'u': self._user}
+        if self._user and self._user is not True and self._user != current_user():
+            return {'u': self._user}
         return {}
 
     def read(self, filename=None):
@@ -248,10 +243,8 @@ class CronTab(object):
                 lines = fhl.readlines()
         elif self.user:
             (out, err) = open_pipe(CRONCMD, l='', **self.user_opt).communicate()
-            if err and 'no crontab for' in str(err):
-                pass
-            elif err:
-                raise IOError("Read crontab %s: %s" % (self.user, err))
+            if err and 'no crontab for' not in str(err):
+                raise IOError(f"Read crontab {self.user}: {err}")
             lines = out.decode('utf-8').split("\n")
         for line in lines:
             self.append(CronItem(line, cron=self), line, read=True)
@@ -260,16 +253,15 @@ class CronTab(object):
         """Append a CronItem object to this CronTab"""
         if cron.is_valid():
             if read and not cron.comment and self.lines and \
-              self.lines[-1] and self.lines[-1][0] == '#':
+                  self.lines[-1] and self.lines[-1][0] == '#':
                 cron.set_comment(self.lines.pop()[1:].strip())
             self.crons.append(cron)
             self.lines.append(cron)
             return cron
-        if '=' in line:
-            if ' ' not in line or line.index('=') < line.index(' '):
-                (name, value) = line.split('=', 1)
-                self.env[name.strip()] = value.strip()
-                return None
+        if '=' in line and (' ' not in line or line.index('=') < line.index(' ')):
+            (name, value) = line.split('=', 1)
+            self.env[name.strip()] = value.strip()
+            return None
         self.lines.append(line.replace('\n', ''))
 
     def write(self, filename=None, user=None):
@@ -331,13 +323,12 @@ class CronTab(object):
             now = datetime.now()
             if 'warp' in kwargs:
                 now += timedelta(seconds=count * 60)
-            for value in self.run_pending(now=now):
-                yield value
+            yield from self.run_pending(now=now)
 
     def render(self):
         """Render this crontab as it would be in the crontab."""
         envs = self.env.items()
-        env = ["%s=%s" % (key, _unicode(val)) for (key, val) in envs]
+        env = [f"{key}={_unicode(val)}" for (key, val) in envs]
         crons = [unicode(cron) for cron in self.lines]
         result = u'\n'.join(env + crons)
         if result and result[-1] not in (u'\n', u'\r'):
@@ -410,10 +401,7 @@ class CronTab(object):
 
     def remove(self, *items):
         """Remove a selected cron from the crontab."""
-        result = 0
-        for item in items:
-            result += self._remove(item)
-        return result
+        return sum(self._remove(item) for item in items)
 
     def _remove(self, item):
         """Internal removal of an item"""
@@ -432,12 +420,11 @@ class CronTab(object):
             return "<My CronTab>"
         elif self.user:
             return "<User CronTab '%s'>" % self.user
-        return "<Unattached %sCronTab>" % kind
+        return f"<Unattached {kind}CronTab>"
 
     def __iter__(self):
         """Return generator so we can track jobs after removal"""
-        for job in list(self.crons.__iter__()):
-            yield job
+        yield from list(self.crons.__iter__())
 
     def __getitem__(self, i):
         return self.crons[i]
@@ -510,7 +497,7 @@ class CronItem(object):
             return
         if self.cron.user == False:
             # Special flag to look for per-command user
-            (self.user, cmd) = (result[0][-3] + ' ').split(' ', 1)
+            (self.user, cmd) = f'{result[0][-3]} '.split(' ', 1)
             self.set_command(cmd)
         else:
             self.set_command(result[0][-3])
@@ -540,16 +527,16 @@ class CronItem(object):
         if self.cron and self.cron.user is False:
             if not self.user:
                 raise ValueError("Job to system-cron format, no user set!")
-            user = self.user + ' '
-        result = u"%s %s%s" % (str(self.slices), user, self.command)
+            user = f'{self.user} '
+        result = f"{str(self.slices)} {user}{self.command}"
         if self.comment:
             self.comment = _unicode(self.comment)
             if SYSTEMV:
-                result = "# " + self.comment + "\n" + result
+                result = f"# {self.comment}" + "\n" + result
             else:
-                result += u" # " + self.comment
+                result += f" # {self.comment}"
         if not self.enabled:
-            result = u"# " + result
+            result = f"# {result}"
         return result
 
     def every_reboot(self):
@@ -740,7 +727,7 @@ class Every(object):
         for (key, name) in enumerate(['minute', 'hour', 'dom', 'month', 'dow',
                                  'min', 'hour', 'day', 'moon', 'weekday']):
             setattr(self, name, self.set_attr(key % 5))
-            setattr(self, name+'s', self.set_attr(key % 5))
+            setattr(self, f'{name}s', self.set_attr(key % 5))
 
     def set_attr(self, target):
         """Inner set target, returns function"""
@@ -844,7 +831,7 @@ class CronSlices(list):
         elif not SYSTEMV:
             for (name, value) in SPECIALS.items():
                 if value == slices and name not in SPECIAL_IGNORE:
-                    return "@%s" % name
+                    return f"@{name}"
         return slices
 
     def clear(self):
@@ -937,7 +924,7 @@ class CronSlice(object):
             try:
                 self.parts.append(self.parse_value(part, sunday=0))
             except ValueError as err:
-                raise ValueError('%s:%s/%s' % (str(err), self.name, part))
+                raise ValueError(f'{str(err)}:{self.name}/{part}')
 
     def render(self, resolve=False):
         """Return the slice rendered as a crontab.
@@ -980,7 +967,7 @@ class CronSlice(object):
         """Set the During value, which sets a range"""
         if not also:
             self.clear()
-        self.parts += self.get_range(str(vfrom) + '-' + str(vto))
+        self.parts += self.get_range(f'{str(vfrom)}-{str(vto)}')
         return self.parts[-1]
 
     @property
@@ -995,9 +982,7 @@ class CronSlice(object):
     def get_range(self, *vrange):
         """Return a cron range for this slice"""
         ret = CronRange(self, *vrange)
-        if ret.dangling is not None:
-            return [ret.dangling, ret]
-        return [ret]
+        return [ret.dangling, ret] if ret.dangling is not None else [ret]
 
     def __iter__(self):
         """Return the entire element as an iterable"""
@@ -1011,8 +996,7 @@ class CronSlice(object):
                     ret[bit] = 1
             else:
                 ret[int(part)] = 1
-        for val in ret:
-            yield val
+        yield from ret
 
     def __len__(self):
         """Returns the number of times this slice happens in it's range"""
@@ -1083,9 +1067,7 @@ def _render(value, resolve=False):
     """Return a single value rendered"""
     if isinstance(value, CronRange):
         return value.render(resolve)
-    if resolve:
-        return str(int(value))
-    return str(value)
+    return str(int(value)) if resolve else str(value)
 
 
 class CronRange(object):
@@ -1101,7 +1083,7 @@ class CronRange(object):
             self.all()
         elif isinstance(vrange[0], basestring):
             self.parse(vrange[0])
-        elif isinstance(vrange[0], int) or isinstance(vrange[0], CronValue):
+        elif isinstance(vrange[0], (int, CronValue)):
             if len(vrange) == 2:
                 (self.vfrom, self.vto) = vrange
             else:

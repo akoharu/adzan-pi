@@ -83,17 +83,17 @@ class SchedulerTestCase(unittest.TestCase):
         ret = list(self.tab.run_scheduler(count, cadence=0.01, warp=True))
         self.assertEqual(len(ret), result)
         if count > 0:
-            self.assertEqual(ret[0], '-h|' + uid)
+            self.assertEqual(ret[0], f'-h|{uid}')
 
     def test_01_run(self):
         """Run the command"""
         self.tab.env['SHELL'] = crontab.SHELL
-        ret = self.tab.new(command=COMMAND+'A').run()
+        ret = self.tab.new(command=f'{COMMAND}A').run()
         self.assertEqual(ret, '-h|A')
 
     def test_02_run_error(self):
         """Run with errors"""
-        ret = self.tab.new(command=COMMAND[:-3]+'-e B').run()
+        ret = self.tab.new(command=f'{COMMAND[:-3]}-e B').run()
         self.assertEqual(ret, '')
         self.assertLog('-e|B')
 

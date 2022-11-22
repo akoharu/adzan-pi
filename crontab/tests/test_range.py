@@ -87,7 +87,7 @@ class RangeTestCase(unittest.TestCase):
           ("7", "0"), ("5-7", "0,5-6"), ("1-7","*"), ("*/7", "0"),
           ("0-6", "*"), ("2-7", "0,2-6"), ("1-5", "1-5"), ("0-5", "0-5")):
             v = str(CronSlice(4, a))
-            self.assertEqual(v, b, "%s != %s, from %s" % (v, b, a))
+            self.assertEqual(v, b, f"{v} != {b}, from {a}")
 
 if __name__ == '__main__':
     test_support.run_unittest(

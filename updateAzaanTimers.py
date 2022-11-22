@@ -13,8 +13,8 @@ system_cron = CronTab(user='pi')
 
 now = datetime.datetime.now()
 assetSholat = "curl 'http://localhost/api/v1/assets/control/asset&1740a9e1daf24a2cb58f9e08a9546703'"
-strPlayFajrAzaanMP3Command = assetSholat+'&& omxplayer -o local /home/pi/adhan/Adhan-fajr.mp3 > /dev/null 2>&1'
-strPlayAzaanMP3Command = assetSholat+'&& omxplayer -o local /home/pi/adhan/Adhan-Makkah.mp3 > /dev/null 2>&1'
+strPlayFajrAzaanMP3Command = f'{assetSholat}&& omxplayer -o local /home/pi/adhan/Adhan-fajr.mp3 > /dev/null 2>&1'
+strPlayAzaanMP3Command = f'{assetSholat}&& omxplayer -o local /home/pi/adhan/Adhan-Makkah.mp3 > /dev/null 2>&1'
 strUpdateCommand = 'python /home/pi/adhan/updateAzaanTimers.py >> /home/pi/adhan/adhan.log 2>&1'
 strClearLogsCommand = 'truncate -s 0 /home/pi/adhan/adhan.log 2>&1'
 strJobComment = 'rpiAdhanClockJob'

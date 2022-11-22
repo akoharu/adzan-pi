@@ -131,12 +131,12 @@ class PrayTimes():
 
 	#---------------------- Initialization -----------------------
 
-	def __init__(self, method = "MWL") :
+	def __init__(self, method = "MWL"):
 
 		# set methods defaults
 		for method, config in self.methods.items():
 			for name, value in self.defaultParams.items():
-				if not name in config['params'] or config['params'][name] is None:
+				if name not in config['params'] or config['params'][name] is None:
 					config['params'][name] = value
 
 		# initialize settings
@@ -194,7 +194,7 @@ class PrayTimes():
 			return self.invalidTime
 		if format == 'Float':
 			return time
-		if suffixes == None:
+		if suffixes is None:
 			suffixes = self.timeSuffixes
 
 		time = self.fixhour(time+ 0.5/ 60)  # add 0.5 minutes to round
@@ -286,7 +286,7 @@ class PrayTimes():
 			'asr': 13, 'sunset': 18, 'maghrib': 18, 'isha': 18
 		}
 		# main iterations
-		for i in range(self.numIterations):
+		for _ in range(self.numIterations):
 			times = self.computePrayerTimes(times)
 		times = self.adjustTimes(times)
 		# add midnight time
@@ -327,7 +327,7 @@ class PrayTimes():
 
 	# return sun angle for sunset/sunrise
 	def riseSetAngle(self, elevation = 0):
-		elevation = 0 if elevation == None else elevation
+		elevation = 0 if elevation is None else elevation
 		return 0.833 + 0.0347 * math.sqrt(elevation) # an approximation
 
 	# apply offsets to the times
@@ -366,7 +366,7 @@ class PrayTimes():
 		portion = 1/2.0  # midnight
 		if method == 'AngleBased':
 			portion = 1/60.0 * angle
-		if method == 'OneSeventh':
+		elif method == 'OneSeventh':
 			portion = 1/7.0
 		return portion * night
 
@@ -429,4 +429,4 @@ if __name__ == "__main__":
 	print('Prayer Times for today in Waterloo/Canada\n'+ ('='* 41))
 	times = prayTimes.getTimes(date.today(), (43, -80), -5);
 	for i in ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha', 'Midnight']:
-		print(i+ ': '+ times[i.lower()])
+		print(f'{i}: {times[i.lower()]}')
